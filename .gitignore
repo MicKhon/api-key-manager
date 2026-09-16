@@ -6,3 +6,9 @@ __pycache__/
 .idea/
 *.log
 .DS_Store
+.pytest_cache/
+build_questions.py
+build_report.py
+build_report_pr2.py
+build_questions_pr2.py
+report_figures/

@@ -1,0 +1,10 @@
+[
+    {
+        "id": 1,
+        "app_id": 1,
+        "value": "ak_live_9f3a2c1b8e7d",
+        "is_active": true,
+        "permission": "write",
+        "expiry_date": "2026-12-31"
+    }
+]
