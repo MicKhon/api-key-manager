@@ -15,24 +15,39 @@
 
 ## Основные сущности
 
-Каждая сущность — отдельный модуль и отдельный файл тестов:
+Каждая сущность — отдельная папка с модулем и тестами:
 
-- пользователь — `users.py` / `tests/test_users.py`
-- приложение — `applications.py` / `tests/test_applications.py`
-- разрешение — `permissions.py` / `tests/test_permissions.py`
-- ключ — `keys.py` / `tests/test_keys.py`
+- пользователь — `entities/users/` / `tests/users/`
+- приложение — `entities/applications/` / `tests/applications/`
+- разрешение — `entities/permissions/` / `tests/permissions/`
+- ключ — `entities/keys/` / `tests/keys/`
 
 ## Структура проекта
 
+```
+api-key-manager/
+├── main.py
+├── entities/
+│   ├── users/
+│   ├── applications/
+│   ├── permissions/
+│   └── keys/
+├── storage/
+├── utils/
+├── data/
+└── tests/
+    ├── users/
+    ├── applications/
+    ├── permissions/
+    └── keys/
+```
+
 - `main.py` — точка запуска и меню;
-- `users.py` — пользователи;
-- `applications.py` — приложения;
-- `permissions.py` — разрешения;
-- `keys.py` — API-ключи;
-- `storage.py` — сохранение и загрузка JSON;
-- `utils.py` — ввод данных и генерация ключа;
+- `entities/` — модули сущностей;
+- `storage/` — сохранение и загрузка JSON;
+- `utils/` — ввод данных и генерация ключа;
 - `data/` — JSON-файлы сущностей;
-- `tests/` — тесты по сущностям.
+- `tests/` — тесты, разложенные по сущностям.
 
 ## Формат данных
 

@@ -1,6 +1,6 @@
 """Тесты функций работы с разрешениями."""
 
-from permissions import (
+from entities.permissions import (
     add_permission,
     find_permission,
     has_permission,

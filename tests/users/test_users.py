@@ -1,6 +1,6 @@
 """Тесты функций работы с пользователями."""
 
-from users import add_user, find_user, sort_users
+from entities.users import add_user, find_user, sort_users
 
 
 def test_add_user() -> None:

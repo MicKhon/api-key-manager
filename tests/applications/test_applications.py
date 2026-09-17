@@ -1,6 +1,6 @@
 """Тесты функций работы с приложениями."""
 
-from applications import (
+from entities.applications import (
     add_application,
     filter_applications_by_user,
     find_application,
