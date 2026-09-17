@@ -2,8 +2,8 @@
 
 from datetime import date
 
-from permissions import has_permission
-from utils import generate_key_value
+from entities.permissions import has_permission
+from utils.utils import generate_key_value
 
 
 def get_key_status(is_active: bool) -> str:

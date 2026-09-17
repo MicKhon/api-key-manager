@@ -2,12 +2,12 @@
 
 from datetime import date
 
-from applications import (
+from entities.applications import (
     add_application,
     find_application,
     sort_applications,
 )
-from keys import (
+from entities.keys import (
     filter_active_keys,
     find_key,
     get_key_status,
@@ -19,12 +19,13 @@ from keys import (
     revoke_key,
     sort_keys,
 )
-from permissions import (
+from entities.permissions import (
     find_permission,
     has_permission,
     sort_permissions,
 )
-from storage import (
+from entities.users import add_user, find_user, sort_users
+from storage.storage import (
     load_applications,
     load_keys,
     load_permissions,
@@ -34,8 +35,7 @@ from storage import (
     save_permissions,
     save_users,
 )
-from users import add_user, find_user, sort_users
-from utils import input_date, input_int
+from utils.utils import input_date, input_int
 
 
 def _user_name(users: dict[int, dict], user_id: int) -> str:
