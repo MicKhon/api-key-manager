@@ -40,31 +40,71 @@ def save_list(filename: str, items: list) -> None:
         json.dump(items, file, ensure_ascii=False, indent=4)
 
 
+def load_collection(filename: str) -> dict[int, dict]:
+    """Загрузить сущности и вернуть словарь по идентификатору."""
+    items = load_list(filename)
+    return {item['id']: item for item in items}
+
+
+def save_collection(
+    items: dict[int, dict],
+    filename: str,
+) -> None:
+    """Сохранить словарь сущностей в JSON-файл."""
+    save_list(filename, list(items.values()))
+
+
+def load_users(filename: str = 'users.json') -> dict[int, dict]:
+    """Загрузить пользователей."""
+    return load_collection(filename)
+
+
+def save_users(
+    users: dict[int, dict],
+    filename: str = 'users.json',
+) -> None:
+    """Сохранить пользователей."""
+    save_collection(users, filename)
+
+
 def load_applications(
     filename: str = 'applications.json',
 ) -> dict[int, dict]:
-    """Загрузить приложения и вернуть словарь по идентификатору."""
-    items = load_list(filename)
-    return {item['id']: item for item in items}
+    """Загрузить приложения."""
+    return load_collection(filename)
 
 
 def save_applications(
     applications: dict[int, dict],
     filename: str = 'applications.json',
 ) -> None:
-    """Сохранить приложения в JSON-файл."""
-    save_list(filename, list(applications.values()))
+    """Сохранить приложения."""
+    save_collection(applications, filename)
+
+
+def load_permissions(
+    filename: str = 'permissions.json',
+) -> dict[int, dict]:
+    """Загрузить разрешения."""
+    return load_collection(filename)
+
+
+def save_permissions(
+    permissions: dict[int, dict],
+    filename: str = 'permissions.json',
+) -> None:
+    """Сохранить разрешения."""
+    save_collection(permissions, filename)
 
 
 def load_keys(filename: str = 'keys.json') -> dict[int, dict]:
-    """Загрузить ключи и вернуть словарь по идентификатору."""
-    items = load_list(filename)
-    return {item['id']: item for item in items}
+    """Загрузить ключи."""
+    return load_collection(filename)
 
 
 def save_keys(
     keys: dict[int, dict],
     filename: str = 'keys.json',
 ) -> None:
-    """Сохранить ключи в JSON-файл."""
-    save_list(filename, list(keys.values()))
+    """Сохранить ключи."""
+    save_collection(keys, filename)

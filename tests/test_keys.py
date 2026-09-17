@@ -4,7 +4,6 @@ from datetime import date
 
 from keys import (
     get_key_status,
-    has_permission,
     is_key_expired,
     is_key_usable,
     issue_key,
@@ -22,12 +21,6 @@ def test_is_key_expired() -> None:
     today = date(2026, 9, 16)
     assert is_key_expired(date(2026, 1, 1), today)
     assert not is_key_expired(date(2026, 12, 31), today)
-
-
-def test_has_permission() -> None:
-    assert has_permission('write', 'write')
-    assert has_permission('admin', 'write')
-    assert not has_permission('read', 'write')
 
 
 def test_mask_api_key() -> None:

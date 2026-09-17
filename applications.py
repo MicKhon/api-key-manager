@@ -4,14 +4,14 @@
 def add_application(
     applications: dict[int, dict],
     name: str,
-    owner: str,
+    user_id: int,
 ) -> None:
     """Добавить приложение в словарь applications."""
     next_id = max(applications, default=0) + 1
     applications[next_id] = {
         'id': next_id,
         'name': name,
-        'owner': owner,
+        'user_id': user_id,
     }
 
 
@@ -28,16 +28,15 @@ def find_application(
     return found
 
 
-def filter_applications_by_owner(
+def filter_applications_by_user(
     applications: dict[int, dict],
-    owner: str,
+    user_id: int,
 ):
-    """Отобрать приложения владельца. Возвращает генератор."""
-    owner_lower = owner.lower()
+    """Отобрать приложения пользователя. Возвращает генератор."""
     return (
         application
         for application in applications.values()
-        if application['owner'].lower() == owner_lower
+        if application['user_id'] == user_id
     )
 
 

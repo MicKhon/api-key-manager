@@ -12,7 +12,6 @@ from keys import (
     find_key,
     get_key_status,
     get_keys_stats,
-    has_permission,
     is_key_expired,
     is_key_usable,
     issue_key,
@@ -20,26 +19,69 @@ from keys import (
     revoke_key,
     sort_keys,
 )
+from permissions import (
+    find_permission,
+    has_permission,
+    sort_permissions,
+)
 from storage import (
     load_applications,
     load_keys,
+    load_permissions,
+    load_users,
     save_applications,
     save_keys,
+    save_permissions,
+    save_users,
 )
+from users import add_user, find_user, sort_users
 from utils import input_date, input_int
 
 
-def show_applications(applications: dict[int, dict]) -> None:
+def _user_name(users: dict[int, dict], user_id: int) -> str:
+    user = users.get(user_id, {})
+    return user.get('name', 'неизвестно')
+
+
+def show_users(users: dict[int, dict]) -> None:
+    """Вывести список пользователей."""
+    if not users:
+        print('Пользователей пока нет.')
+        return
+    print('ID  Имя')
+    for user in sort_users(users):
+        print(f'{user["id"]:<4}{user["name"]}')
+
+
+def show_applications(
+    applications: dict[int, dict],
+    users: dict[int, dict],
+) -> None:
     """Вывести список приложений."""
     if not applications:
         print('Приложений пока нет.')
         return
     print('ID  Название                    Владелец')
     for application in sort_applications(applications):
+        owner = _user_name(users, application['user_id'])
         print(
             f'{application["id"]:<4}'
             f'{application["name"]:<28}'
-            f'{application["owner"]}'
+            f'{owner}'
+        )
+
+
+def show_permissions(permissions: dict[int, dict]) -> None:
+    """Вывести список разрешений."""
+    if not permissions:
+        print('Разрешений пока нет.')
+        return
+    print('ID  Код       Название')
+    for permission in sort_permissions(permissions):
+        print(
+            f'{permission["id"]:<4}'
+            f'{permission["code"]:<10}'
+            f'{permission["title"]}'
         )
 
 
@@ -76,6 +118,14 @@ def show_stats(keys: dict[int, dict]) -> None:
     print(f'Активных ключей в выборке: {len(active_keys)}.')
 
 
+def _choose_user(users: dict[int, dict]) -> int | None:
+    user_id = input_int('Введите ID пользователя: ')
+    if user_id not in users:
+        print('Пользователь не найден.')
+        return None
+    return user_id
+
+
 def _choose_application(applications: dict[int, dict]) -> int | None:
     app_id = input_int('Введите ID приложения: ')
     if app_id not in applications:
@@ -96,21 +146,27 @@ def print_menu() -> None:
     """Напечатать меню приложения."""
     print()
     print('=== Сервис управления API-ключами ===')
-    print('1. Показать приложения')
-    print('2. Найти приложение по названию')
-    print('3. Добавить приложение')
-    print('4. Показать ключи')
-    print('5. Проверить статус ключа')
-    print('6. Проверить разрешение ключа')
-    print('7. Выпустить ключ')
-    print('8. Отозвать ключ')
-    print('9. Показать статистику')
+    print('1. Показать пользователей')
+    print('2. Найти пользователя')
+    print('3. Добавить пользователя')
+    print('4. Показать приложения')
+    print('5. Найти приложение')
+    print('6. Добавить приложение')
+    print('7. Показать разрешения')
+    print('8. Показать ключи')
+    print('9. Проверить статус ключа')
+    print('10. Проверить разрешение ключа')
+    print('11. Выпустить ключ')
+    print('12. Отозвать ключ')
+    print('13. Показать статистику')
     print('0. Выход')
 
 
 def main() -> None:
     """Точка запуска: меню и вызов функций проекта."""
+    users = load_users()
     applications = load_applications()
+    permissions = load_permissions()
     keys = load_keys()
 
     while True:
@@ -118,31 +174,58 @@ def main() -> None:
         choice = input('Выберите действие: ').strip()
 
         if choice == '1':
-            show_applications(applications)
+            show_users(users)
 
         elif choice == '2':
+            query = input('Подстрока имени: ').strip()
+            found = find_user(users, query)
+            if not found:
+                print('Ничего не найдено.')
+            else:
+                for item in found:
+                    print(f'{item["id"]}. {item["name"]}')
+
+        elif choice == '3':
+            name = input('Имя пользователя: ').strip()
+            if not name:
+                print('Имя не должно быть пустым.')
+                continue
+            add_user(users, name)
+            save_users(users)
+            print('Пользователь добавлен.')
+
+        elif choice == '4':
+            show_applications(applications, users)
+
+        elif choice == '5':
             query = input('Подстрока названия: ').strip()
             found = find_application(applications, query)
             if not found:
                 print('Ничего не найдено.')
             else:
                 for item in found:
-                    print(f'{item["id"]}. {item["name"]} ({item["owner"]})')
+                    owner = _user_name(users, item['user_id'])
+                    print(f'{item["id"]}. {item["name"]} ({owner})')
 
-        elif choice == '3':
-            name = input('Название приложения: ').strip()
-            owner = input('Владелец: ').strip()
-            if not name or not owner:
-                print('Название и владелец не должны быть пустыми.')
+        elif choice == '6':
+            user_id = _choose_user(users)
+            if user_id is None:
                 continue
-            add_application(applications, name, owner)
+            name = input('Название приложения: ').strip()
+            if not name:
+                print('Название не должно быть пустым.')
+                continue
+            add_application(applications, name, user_id)
             save_applications(applications)
             print('Приложение добавлено.')
 
-        elif choice == '4':
+        elif choice == '7':
+            show_permissions(permissions)
+
+        elif choice == '8':
             show_keys(keys, applications)
 
-        elif choice == '5':
+        elif choice == '9':
             key_id = _choose_key(keys)
             if key_id is None:
                 continue
@@ -155,7 +238,7 @@ def main() -> None:
             else:
                 print('Срок действия ключа не истёк.')
 
-        elif choice == '6':
+        elif choice == '10':
             key_id = _choose_key(keys)
             if key_id is None:
                 continue
@@ -171,23 +254,23 @@ def main() -> None:
             else:
                 print('Разрешения недостаточно.')
 
-        elif choice == '7':
+        elif choice == '11':
             app_id = _choose_application(applications)
             if app_id is None:
                 continue
-            permission = input('Разрешение (read/write/admin): ').strip()
-            if permission not in {'read', 'write', 'admin'}:
+            code = input('Код разрешения (read/write/admin): ').strip()
+            if find_permission(permissions, code) is None:
                 print('Некорректное разрешение.')
                 continue
             expiry_date = input_date('Срок действия (ГГГГ-ММ-ДД): ')
-            key = issue_key(keys, app_id, permission, expiry_date)
+            key = issue_key(keys, app_id, code, expiry_date)
             save_keys(keys)
             print(
                 'Ключ выпущен: '
                 f'{mask_api_key(key["value"])} (id={key["id"]})'
             )
 
-        elif choice == '8':
+        elif choice == '12':
             key_id = _choose_key(keys)
             if key_id is None:
                 continue
@@ -199,11 +282,13 @@ def main() -> None:
             save_keys(keys)
             print('Ключ отозван.')
 
-        elif choice == '9':
+        elif choice == '13':
             show_stats(keys)
 
         elif choice == '0':
+            save_users(users)
             save_applications(applications)
+            save_permissions(permissions)
             save_keys(keys)
             print('Данные сохранены. Выход.')
             break

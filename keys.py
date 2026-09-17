@@ -2,6 +2,7 @@
 
 from datetime import date
 
+from permissions import has_permission
 from utils import generate_key_value
 
 
@@ -15,18 +16,6 @@ def get_key_status(is_active: bool) -> str:
 def is_key_expired(expiry_date: date, today: date) -> bool:
     """Проверяет, истёк ли срок действия ключа."""
     if expiry_date < today:
-        return True
-    return False
-
-
-def has_permission(
-    user_permission: str,
-    required_permission: str,
-) -> bool:
-    """Проверяет, достаточно ли разрешения для действия."""
-    if user_permission == 'admin':
-        return True
-    if user_permission == required_permission:
         return True
     return False
 

@@ -6,5 +6,13 @@
         "is_active": true,
         "permission": "write",
         "expiry_date": "2026-12-31"
+    },
+    {
+        "id": 2,
+        "app_id": 2,
+        "value": "ak_live_f0c76ebddd30",
+        "is_active": true,
+        "permission": "read",
+        "expiry_date": "2027-01-01"
     }
 ]
