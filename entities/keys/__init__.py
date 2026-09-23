@@ -1,6 +1,7 @@
 """API-ключ."""
 
 from entities.keys.keys import (
+    ApiKey,
     filter_active_keys,
     find_key,
     get_key_status,
@@ -14,6 +15,7 @@ from entities.keys.keys import (
 )
 
 __all__ = [
+    'ApiKey',
     'filter_active_keys',
     'find_key',
     'get_key_status',

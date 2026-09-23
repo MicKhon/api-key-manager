@@ -3,28 +3,33 @@
 from datetime import date
 
 from entities.applications import (
+    Application,
     add_application,
     find_application,
+    find_application_by_id,
     sort_applications,
 )
 from entities.keys import (
+    ApiKey,
     filter_active_keys,
     find_key,
-    get_key_status,
     get_keys_stats,
-    is_key_expired,
-    is_key_usable,
     issue_key,
-    mask_api_key,
     revoke_key,
     sort_keys,
 )
 from entities.permissions import (
+    Permission,
     find_permission,
-    has_permission,
     sort_permissions,
 )
-from entities.users import add_user, find_user, sort_users
+from entities.users import (
+    User,
+    add_user,
+    find_user,
+    find_user_by_id,
+    sort_users,
+)
 from storage.storage import (
     load_applications,
     load_keys,
@@ -38,40 +43,31 @@ from storage.storage import (
 from utils.utils import input_date, input_int
 
 
-def _user_name(users: dict[int, dict], user_id: int) -> str:
-    user = users.get(user_id, {})
-    return user.get('name', 'неизвестно')
-
-
-def show_users(users: dict[int, dict]) -> None:
+def show_users(users: list[User]) -> None:
     """Вывести список пользователей."""
     if not users:
         print('Пользователей пока нет.')
         return
     print('ID  Имя')
     for user in sort_users(users):
-        print(f'{user["id"]:<4}{user["name"]}')
+        print(user)
 
 
-def show_applications(
-    applications: dict[int, dict],
-    users: dict[int, dict],
-) -> None:
+def show_applications(applications: list[Application]) -> None:
     """Вывести список приложений."""
     if not applications:
         print('Приложений пока нет.')
         return
     print('ID  Название                    Владелец')
     for application in sort_applications(applications):
-        owner = _user_name(users, application['user_id'])
         print(
-            f'{application["id"]:<4}'
-            f'{application["name"]:<28}'
-            f'{owner}'
+            f'{application.id:<4}'
+            f'{application.name:<28}'
+            f'{application.user.name}'
         )
 
 
-def show_permissions(permissions: dict[int, dict]) -> None:
+def show_permissions(permissions: list[Permission]) -> None:
     """Вывести список разрешений."""
     if not permissions:
         print('Разрешений пока нет.')
@@ -79,34 +75,28 @@ def show_permissions(permissions: dict[int, dict]) -> None:
     print('ID  Код       Название')
     for permission in sort_permissions(permissions):
         print(
-            f'{permission["id"]:<4}'
-            f'{permission["code"]:<10}'
-            f'{permission["title"]}'
+            f'{permission.id:<4}'
+            f'{permission.code:<10}'
+            f'{permission.title}'
         )
 
 
-def show_keys(
-    keys: dict[int, dict],
-    applications: dict[int, dict],
-) -> None:
+def show_keys(keys: list[ApiKey]) -> None:
     """Вывести список ключей с маскированием значения."""
     if not keys:
         print('Ключей пока нет.')
         return
     print('ID  Приложение                 Ключ              Статус')
     for key in sort_keys(keys):
-        application = applications.get(key['app_id'], {})
-        app_name = application.get('name', 'неизвестно')
-        status = get_key_status(key['is_active'])
         print(
-            f'{key["id"]:<4}'
-            f'{app_name:<26}'
-            f'{mask_api_key(key["value"]):<18}'
-            f'{status}'
+            f'{key.id:<4}'
+            f'{key.application.name:<26}'
+            f'{ApiKey.mask_value(key.value):<18}'
+            f'{key.status}'
         )
 
 
-def show_stats(keys: dict[int, dict]) -> None:
+def show_stats(keys: list[ApiKey]) -> None:
     """Вывести статистику по ключам."""
     stats = get_keys_stats(keys)
     active_keys = list(filter_active_keys(keys))
@@ -118,28 +108,33 @@ def show_stats(keys: dict[int, dict]) -> None:
     print(f'Активных ключей в выборке: {len(active_keys)}.')
 
 
-def _choose_user(users: dict[int, dict]) -> int | None:
+def _choose_user(users: list[User]) -> User | None:
     user_id = input_int('Введите ID пользователя: ')
-    if user_id not in users:
+    user = find_user_by_id(users, user_id)
+    if user is None:
         print('Пользователь не найден.')
         return None
-    return user_id
+    return user
 
 
-def _choose_application(applications: dict[int, dict]) -> int | None:
+def _choose_application(
+    applications: list[Application],
+) -> Application | None:
     app_id = input_int('Введите ID приложения: ')
-    if app_id not in applications:
+    application = find_application_by_id(applications, app_id)
+    if application is None:
         print('Приложение не найдено.')
         return None
-    return app_id
+    return application
 
 
-def _choose_key(keys: dict[int, dict]) -> int | None:
+def _choose_key(keys: list[ApiKey]) -> ApiKey | None:
     key_id = input_int('Введите ID ключа: ')
-    if find_key(keys, key_id) is None:
+    key = find_key(keys, key_id)
+    if key is None:
         print('Ключ не найден.')
         return None
-    return key_id
+    return key
 
 
 def print_menu() -> None:
@@ -163,11 +158,11 @@ def print_menu() -> None:
 
 
 def main() -> None:
-    """Точка запуска: меню и вызов функций проекта."""
+    """Точка запуска: меню и вызов методов объектов."""
     users = load_users()
-    applications = load_applications()
+    applications = load_applications(users)
     permissions = load_permissions()
-    keys = load_keys()
+    keys = load_keys(applications, permissions)
 
     while True:
         print_menu()
@@ -183,7 +178,7 @@ def main() -> None:
                 print('Ничего не найдено.')
             else:
                 for item in found:
-                    print(f'{item["id"]}. {item["name"]}')
+                    print(item)
 
         elif choice == '3':
             name = input('Имя пользователя: ').strip()
@@ -195,7 +190,7 @@ def main() -> None:
             print('Пользователь добавлен.')
 
         elif choice == '4':
-            show_applications(applications, users)
+            show_applications(applications)
 
         elif choice == '5':
             query = input('Подстрока названия: ').strip()
@@ -204,18 +199,17 @@ def main() -> None:
                 print('Ничего не найдено.')
             else:
                 for item in found:
-                    owner = _user_name(users, item['user_id'])
-                    print(f'{item["id"]}. {item["name"]} ({owner})')
+                    print(item)
 
         elif choice == '6':
-            user_id = _choose_user(users)
-            if user_id is None:
+            user = _choose_user(users)
+            if user is None:
                 continue
             name = input('Название приложения: ').strip()
             if not name:
                 print('Название не должно быть пустым.')
                 continue
-            add_application(applications, name, user_id)
+            add_application(applications, name, user)
             save_applications(applications)
             print('Приложение добавлено.')
 
@@ -223,59 +217,57 @@ def main() -> None:
             show_permissions(permissions)
 
         elif choice == '8':
-            show_keys(keys, applications)
+            show_keys(keys)
 
         elif choice == '9':
-            key_id = _choose_key(keys)
-            if key_id is None:
+            key = _choose_key(keys)
+            if key is None:
                 continue
-            key = keys[key_id]
             today = date.today()
-            expiry_date = date.fromisoformat(key['expiry_date'])
-            print(get_key_status(key['is_active']))
-            if is_key_expired(expiry_date, today):
+            print(key.status)
+            if key.is_expired(key.expiry_date, today):
                 print('Срок действия ключа истёк.')
             else:
                 print('Срок действия ключа не истёк.')
 
         elif choice == '10':
-            key_id = _choose_key(keys)
-            if key_id is None:
+            key = _choose_key(keys)
+            if key is None:
                 continue
             required = input('Требуемое разрешение: ').strip()
-            key = keys[key_id]
             today = date.today()
-            if is_key_usable(keys, key_id, today, required):
+            if key.is_usable(today, required):
                 print('Ключ можно использовать для этого действия.')
             else:
                 print('Ключ использовать нельзя.')
-            if has_permission(key['permission'], required):
+            if key.permission.covers(required):
                 print('Разрешение у ключа достаточное.')
             else:
                 print('Разрешения недостаточно.')
 
         elif choice == '11':
-            app_id = _choose_application(applications)
-            if app_id is None:
+            application = _choose_application(applications)
+            if application is None:
                 continue
             code = input('Код разрешения (read/write/admin): ').strip()
-            if find_permission(permissions, code) is None:
+            permission = find_permission(permissions, code)
+            if permission is None:
                 print('Некорректное разрешение.')
                 continue
             expiry_date = input_date('Срок действия (ГГГГ-ММ-ДД): ')
-            key = issue_key(keys, app_id, code, expiry_date)
+            key = issue_key(keys, application, permission, expiry_date)
             save_keys(keys)
             print(
                 'Ключ выпущен: '
-                f'{mask_api_key(key["value"])} (id={key["id"]})'
+                f'{ApiKey.mask_value(key.value)} (id={key.id})'
             )
 
         elif choice == '12':
-            key_id = _choose_key(keys)
-            if key_id is None:
+            key = _choose_key(keys)
+            if key is None:
                 continue
             try:
-                revoke_key(keys, key_id)
+                revoke_key(keys, key.id)
             except ValueError as error:
                 print(error)
                 continue

@@ -1,48 +1,108 @@
-"""Функции для работы с приложениями."""
+"""Класс приложения и функции работы с коллекцией приложений."""
+
+from entities.base import Entity
+from entities.users.users import User
+
+
+class Application(Entity):
+    """Приложение, принадлежащее пользователю."""
+
+    def __init__(
+        self,
+        application_id: int,
+        name: str,
+        user: User,
+    ) -> None:
+        """Создать объект приложения."""
+        super().__init__(application_id)
+        self.name = name
+        self.user = user
+
+    @classmethod
+    def from_data(cls, data: dict, user: User) -> 'Application':
+        """Создать приложение из словаря JSON и объекта User."""
+        return cls(
+            application_id=data['id'],
+            name=data['name'],
+            user=user,
+        )
+
+    def belongs_to(self, user_id: int) -> bool:
+        """Проверить, принадлежит ли приложение пользователю."""
+        return self.user.id == user_id
+
+    def to_dict(self) -> dict:
+        """Преобразовать приложение в данные JSON."""
+        return {
+            'id': self.id,
+            'name': self.name,
+            'user_id': self.user.id,
+        }
+
+    def __str__(self) -> str:
+        """Вернуть строковое представление приложения."""
+        return f'{self.id}. {self.name} ({self.user.name})'
+
+
+def _next_id(applications: list[Application]) -> int:
+    """Вернуть следующий идентификатор для коллекции."""
+    if not applications:
+        return 1
+    return max(application.id for application in applications) + 1
 
 
 def add_application(
-    applications: dict[int, dict],
+    applications: list[Application],
     name: str,
-    user_id: int,
-) -> None:
-    """Добавить приложение в словарь applications."""
-    next_id = max(applications, default=0) + 1
-    applications[next_id] = {
-        'id': next_id,
-        'name': name,
-        'user_id': user_id,
-    }
+    user: User,
+) -> Application:
+    """Создать объект Application и добавить его в коллекцию."""
+    application = Application(_next_id(applications), name, user)
+    applications.append(application)
+    return application
 
 
 def find_application(
-    applications: dict[int, dict],
+    applications: list[Application],
     query: str,
-) -> list[dict]:
+) -> list[Application]:
     """Найти приложения по подстроке названия без учёта регистра."""
     needle = query.lower()
     found = []
-    for application in applications.values():
-        if needle in application['name'].lower():
+    for application in applications:
+        if needle in application.name.lower():
             found.append(application)
     return found
 
 
+def find_application_by_id(
+    applications: list[Application],
+    application_id: int,
+) -> Application | None:
+    """Вернуть приложение по идентификатору или None."""
+    for application in applications:
+        if application.id == application_id:
+            return application
+    return None
+
+
 def filter_applications_by_user(
-    applications: dict[int, dict],
+    applications: list[Application],
     user_id: int,
 ):
     """Отобрать приложения пользователя. Возвращает генератор."""
     return (
         application
-        for application in applications.values()
-        if application['user_id'] == user_id
+        for application in applications
+        if application.belongs_to(user_id)
     )
 
 
-def sort_applications(applications: dict[int, dict]) -> list[dict]:
+def sort_applications(
+    applications: list[Application],
+) -> list[Application]:
     """Вернуть приложения, отсортированные по названию."""
     return sorted(
-        applications.values(),
-        key=lambda item: item['name'].lower(),
+        applications,
+        key=lambda item: item.name.lower(),
     )

@@ -1,7 +1,15 @@
-"""Сохранение и загрузка данных проекта в JSON-файлах."""
+"""Сохранение и загрузка объектов проекта в JSON-файлах."""
 
 import json
 from pathlib import Path
+
+from entities.applications.applications import (
+    Application,
+    find_application_by_id,
+)
+from entities.keys.keys import ApiKey
+from entities.permissions.permissions import Permission, find_permission
+from entities.users.users import User, find_user_by_id
 
 DATA_DIR = Path(__file__).resolve().parent.parent / 'data'
 
@@ -40,71 +48,83 @@ def save_list(filename: str, items: list) -> None:
         json.dump(items, file, ensure_ascii=False, indent=4)
 
 
-def load_collection(filename: str) -> dict[int, dict]:
-    """Загрузить сущности и вернуть словарь по идентификатору."""
+def load_users(filename: str = 'users.json') -> list[User]:
+    """Загрузить пользователей как объекты User."""
     items = load_list(filename)
-    return {item['id']: item for item in items}
-
-
-def save_collection(
-    items: dict[int, dict],
-    filename: str,
-) -> None:
-    """Сохранить словарь сущностей в JSON-файл."""
-    save_list(filename, list(items.values()))
-
-
-def load_users(filename: str = 'users.json') -> dict[int, dict]:
-    """Загрузить пользователей."""
-    return load_collection(filename)
+    return [User.from_data(item) for item in items]
 
 
 def save_users(
-    users: dict[int, dict],
+    users: list[User],
     filename: str = 'users.json',
 ) -> None:
-    """Сохранить пользователей."""
-    save_collection(users, filename)
+    """Сохранить объекты User в JSON."""
+    save_list(filename, [user.to_dict() for user in users])
 
 
 def load_applications(
+    users: list[User],
     filename: str = 'applications.json',
-) -> dict[int, dict]:
-    """Загрузить приложения."""
-    return load_collection(filename)
+) -> list[Application]:
+    """Загрузить приложения как объекты Application."""
+    applications = []
+    for item in load_list(filename):
+        user = find_user_by_id(users, item['user_id'])
+        if user is None:
+            continue
+        applications.append(Application.from_data(item, user))
+    return applications
 
 
 def save_applications(
-    applications: dict[int, dict],
+    applications: list[Application],
     filename: str = 'applications.json',
 ) -> None:
-    """Сохранить приложения."""
-    save_collection(applications, filename)
+    """Сохранить объекты Application в JSON."""
+    save_list(
+        filename,
+        [application.to_dict() for application in applications],
+    )
 
 
 def load_permissions(
     filename: str = 'permissions.json',
-) -> dict[int, dict]:
-    """Загрузить разрешения."""
-    return load_collection(filename)
+) -> list[Permission]:
+    """Загрузить разрешения как объекты Permission."""
+    items = load_list(filename)
+    return [Permission.from_data(item) for item in items]
 
 
 def save_permissions(
-    permissions: dict[int, dict],
+    permissions: list[Permission],
     filename: str = 'permissions.json',
 ) -> None:
-    """Сохранить разрешения."""
-    save_collection(permissions, filename)
+    """Сохранить объекты Permission в JSON."""
+    save_list(
+        filename,
+        [permission.to_dict() for permission in permissions],
+    )
 
 
-def load_keys(filename: str = 'keys.json') -> dict[int, dict]:
-    """Загрузить ключи."""
-    return load_collection(filename)
+def load_keys(
+    applications: list[Application],
+    permissions: list[Permission],
+    filename: str = 'keys.json',
+) -> list[ApiKey]:
+    """Загрузить ключи как объекты ApiKey."""
+    keys = []
+    for item in load_list(filename):
+        application = find_application_by_id(applications, item['app_id'])
+        permission = find_permission(permissions, item['permission'])
+        if application is None or permission is None:
+            continue
+        keys.append(ApiKey.from_data(item, application, permission))
+    return keys
 
 
 def save_keys(
-    keys: dict[int, dict],
+    keys: list[ApiKey],
     filename: str = 'keys.json',
 ) -> None:
-    """Сохранить ключи."""
-    save_collection(keys, filename)
+    """Сохранить объекты ApiKey в JSON."""
+    save_list(filename, [key.to_dict() for key in keys])
